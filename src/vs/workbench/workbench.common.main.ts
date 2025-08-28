@@ -422,5 +422,7 @@ import './contrib/dropOrPasteInto/browser/dropOrPasteInto.contribution.js';
 // Edit Telemetry
 import './contrib/editTelemetry/browser/editTelemetry.contribution.js';
 
+// Business Design
+import './contrib/businessDesign/browser/businessDesign.contribution.js';
 
 //#endregion
