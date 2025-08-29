@@ -102,9 +102,9 @@ export class GlobalCompositeBar extends Disposable {
 			preventLoopNavigation: true
 		}));
 
-		if (this.accountsVisibilityPreference) {
-			this.globalActivityActionBar.push(this.accountAction, { index: GlobalCompositeBar.ACCOUNTS_ACTION_INDEX });
-		}
+		// if (this.accountsVisibilityPreference) {
+		// 	this.globalActivityActionBar.push(this.accountAction, { index: GlobalCompositeBar.ACCOUNTS_ACTION_INDEX });
+		// }
 
 		this.globalActivityActionBar.push(this.globalActivityAction);
 

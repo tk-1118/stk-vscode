@@ -425,4 +425,7 @@ import './contrib/editTelemetry/browser/editTelemetry.contribution.js';
 // Business Design
 import './contrib/businessDesign/browser/businessDesign.contribution.js';
 
+// Custom Authentication
+import './contrib/customAuthentication/browser/customAuthentication.contribution.js';
+
 //#endregion
