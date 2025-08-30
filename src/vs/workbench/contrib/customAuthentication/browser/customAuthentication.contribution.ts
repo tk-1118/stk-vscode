@@ -26,7 +26,8 @@ import { IAuthenticationService } from '../../../services/authentication/common/
 import { CustomAuthenticationProvider } from './customAuthenticationProvider.js';
 import { IQuickInputService } from '../../../../platform/quickinput/common/quickInput.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
-import { ICustomAuthenticationService, CustomAuthenticationService } from './customAuthenticationService.js';
+import { ICustomAuthenticationService } from '../../../services/authentication/common/customAuthentication.js';
+import { CustomAuthenticationService } from './customAuthenticationService.js';
 
 // Register icon for custom authentication
 const customAuthenticationIcon = registerIcon('custom-authentication', Codicon.account, localize('customAuthenticationIcon', 'Custom Authentication icon'));
@@ -99,12 +100,13 @@ class CustomAuthenticationContribution implements IWorkbenchContribution {
 	constructor(
 		@IAuthenticationService private readonly authenticationService: IAuthenticationService,
 		@IQuickInputService private readonly quickInputService: IQuickInputService,
-		@IStorageService private readonly storageService: IStorageService
+		@IStorageService private readonly storageService: IStorageService,
+		@ICustomAuthenticationService private readonly customAuthenticationService: ICustomAuthenticationService
 	) {
 		console.log('CustomAuthenticationContribution constructor called');
 		// Register our custom authentication provider
 		console.log('CustomAuthenticationContribution registering provider');
-		const customAuthProvider = new CustomAuthenticationProvider(this.quickInputService, this.storageService);
+		const customAuthProvider = new CustomAuthenticationProvider(this.quickInputService, this.storageService, this.customAuthenticationService);
 		this.authenticationService.registerAuthenticationProvider('custom-auth-provider', customAuthProvider);
 		console.log('CustomAuthenticationContribution provider registered');
 		console.log('CustomAuthenticationContribution constructor finished');

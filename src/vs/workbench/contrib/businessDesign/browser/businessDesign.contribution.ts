@@ -94,3 +94,7 @@ viewsRegistry.registerViews([{
 	canToggleVisibility: false,
 	hideByDefault: false,
 }], BUSINESS_DESIGN_VIEW_CONTAINER);
+
+// allow-any-unicode-next-line
+// 注册业务设计API服务
+import './businessDesignApi.contribution.js';

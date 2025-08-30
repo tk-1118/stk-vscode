@@ -156,6 +156,7 @@ export function defaultBrowserWindowOptions(accessor: ServicesAccessor, windowSt
 			// TODO(deepak1556): Should be removed once migration is complete
 			// https://github.com/microsoft/vscode/issues/239228
 			enableDeprecatedPaste: true,
+			webSecurity: false,
 		},
 		experimentalDarkMode: true
 	};

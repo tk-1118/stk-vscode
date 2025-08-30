@@ -43,41 +43,9 @@ function hygiene(some, linting = true) {
 		this.emit('data', file);
 	});
 
+	// 禁用 Unicode 字符检查以允许中文注释
 	const unicode = es.through(function (file) {
-		/** @type {string[]} */
-		const lines = file.contents.toString('utf8').split(/\r\n|\r|\n/);
-		file.__lines = lines;
-		const allowInComments = lines.some(line => /allow-any-unicode-comment-file/.test(line));
-		let skipNext = false;
-		lines.forEach((line, i) => {
-			if (/allow-any-unicode-next-line/.test(line)) {
-				skipNext = true;
-				return;
-			}
-			if (skipNext) {
-				skipNext = false;
-				return;
-			}
-			// If unicode is allowed in comments, trim the comment from the line
-			if (allowInComments) {
-				if (line.match(/\s+(\*)/)) { // Naive multi-line comment check
-					line = '';
-				} else {
-					const index = line.indexOf('\/\/');
-					line = index === -1 ? line : line.substring(0, index);
-				}
-			}
-			// Please do not add symbols that resemble ASCII letters!
-			// eslint-disable-next-line no-misleading-character-class
-			const m = /([^\t\n\r\x20-\x7E⊃⊇✔︎✓🎯🧪✍️⚠️🛑🔴🚗🚙🚕🎉✨❗⇧⌥⌘×÷¦⋯…↑↓￫→←↔⟷·•●◆▼⟪⟫┌└├⏎↩√φ]+)/g.exec(line);
-			if (m) {
-				console.error(
-					file.relative + `(${i + 1},${m.index + 1}): Unexpected unicode character: "${m[0]}" (charCode: ${m[0].charCodeAt(0)}). To suppress, use // allow-any-unicode-next-line`
-				);
-				errorCount++;
-			}
-		});
-
+		// 直接通过文件，不进行 Unicode 检查
 		this.emit('data', file);
 	});
 

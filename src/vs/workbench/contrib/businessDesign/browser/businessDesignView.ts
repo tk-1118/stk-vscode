@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { localize } from '../../../../nls.js';
-import { $ } from '../../../../base/browser/dom.js';
+import { $, addDisposableListener, EventType } from '../../../../base/browser/dom.js';
 import { ViewPane } from '../../../browser/parts/views/viewPane.js';
 import { IKeybindingService } from '../../../../platform/keybinding/common/keybinding.js';
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
@@ -16,12 +16,18 @@ import { IOpenerService } from '../../../../platform/opener/common/opener.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { IHoverService } from '../../../../platform/hover/browser/hover.js';
 import { IAccessibleViewInformationService } from '../../../services/accessibility/common/accessibleViewInformationService.js';
+import { IBusinessDesignApiService, IBusinessDesign } from './businessDesignApiService.js';
 
 export class BusinessDesignView extends ViewPane {
 
 	static readonly ID = 'workbench.view.businessDesign.main';
 	// allow-any-unicode-next-line
 	static readonly NAME = localize('businessDesignView', "业务设计");
+
+	private businessDesigns: IBusinessDesign[] = [];
+	private refreshButton: HTMLButtonElement | undefined;
+	private businessDesignsList: HTMLElement | undefined;
+	private businessDesignApiService: IBusinessDesignApiService;
 
 	constructor(
 		@IKeybindingService keybindingService: IKeybindingService,
@@ -39,6 +45,12 @@ export class BusinessDesignView extends ViewPane {
 			id: BusinessDesignView.ID,
 			title: BusinessDesignView.NAME,
 		}, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, hoverService, accessibleViewInformationService);
+
+		// allow-any-unicode-next-line
+		// 获取API服务实例
+		this.businessDesignApiService = instantiationService.invokeFunction((accessor) => {
+			return accessor.get(IBusinessDesignApiService);
+		});
 	}
 
 	protected override renderBody(container: HTMLElement): void {
@@ -55,6 +67,29 @@ export class BusinessDesignView extends ViewPane {
 		title.style.fontSize = '24px';
 		title.style.fontWeight = 'bold';
 		title.style.marginBottom = '20px';
+
+		// allow-any-unicode-next-line
+		// 添加刷新按钮
+		this.refreshButton = document.createElement('button');
+		this.refreshButton.textContent = localize('refresh', '刷新'); // allow-any-unicode-next-line
+		this.refreshButton.style.marginBottom = '20px';
+		this.refreshButton.style.padding = '8px 16px';
+		this.refreshButton.style.borderRadius = '4px';
+		this.refreshButton.style.border = '1px solid #ccc';
+		this.refreshButton.style.backgroundColor = '#007acc';
+		this.refreshButton.style.color = 'white';
+		this.refreshButton.style.cursor = 'pointer';
+
+		if (this.refreshButton) {
+			this._register(addDisposableListener(this.refreshButton, EventType.CLICK, async () => {
+				await this.loadBusinessDesigns();
+			}));
+		}
+
+		// allow-any-unicode-next-line
+		// 业务设计列表
+		this.businessDesignsList = $('.business-designs-list');
+		this.businessDesignsList.style.marginBottom = '20px';
 
 		const description = $('.business-design-description');
 		// allow-any-unicode-next-line
@@ -92,10 +127,55 @@ export class BusinessDesignView extends ViewPane {
 		featuresList.appendChild(featuresListElement);
 
 		content.appendChild(title);
+		content.appendChild(this.refreshButton);
+		content.appendChild(this.businessDesignsList);
 		content.appendChild(description);
 		content.appendChild(featuresList);
 
 		container.appendChild(content);
+
+		// allow-any-unicode-next-line
+		// 加载业务设计数据
+		this.loadBusinessDesigns();
+	}
+
+	private async loadBusinessDesigns(): Promise<void> {
+		if (!this.businessDesignsList) {
+			return;
+		}
+
+		try {
+			// allow-any-unicode-next-line
+			// 调用实际的API服务
+			this.businessDesigns = await this.businessDesignApiService.getBusinessDesigns();
+			this.renderBusinessDesigns();
+		} catch (error) {
+			console.error('Failed to load business designs:', error);
+			// allow-any-unicode-next-line
+			// 显示错误信息
+			this.businessDesignsList.textContent = localize('loadFailed', '加载业务设计失败'); // allow-any-unicode-next-line
+		}
+	}
+
+	private renderBusinessDesigns(): void {
+		if (!this.businessDesignsList) {
+			return;
+		}
+
+		// allow-any-unicode-next-line
+		// 清空现有内容
+		this.businessDesignsList.innerHTML = '';
+
+		// allow-any-unicode-next-line
+		// 创建业务设计列表
+		const listElement = $('ul');
+		for (const design of this.businessDesigns) {
+			const listItem = $('li');
+			listItem.textContent = `${design.name} - ${design.description}`;
+			listElement.appendChild(listItem);
+		}
+
+		this.businessDesignsList.appendChild(listElement);
 	}
 
 	protected override layoutBody(height: number, width: number): void {

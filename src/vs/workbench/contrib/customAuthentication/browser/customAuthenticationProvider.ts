@@ -9,6 +9,7 @@ import { IAuthenticationProvider, AuthenticationSession, AuthenticationSessionsC
 import { IQuickInputService } from '../../../../platform/quickinput/common/quickInput.js';
 import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
 import { localize } from '../../../../nls.js';
+import { ICustomAuthenticationService } from '../../../services/authentication/common/customAuthentication.js';
 
 interface ICustomAuthSession extends AuthenticationSession {
 	// Custom session properties can be added here
@@ -25,7 +26,8 @@ export class CustomAuthenticationProvider extends Disposable implements IAuthent
 
 	constructor(
 		@IQuickInputService private readonly quickInputService: IQuickInputService,
-		@IStorageService private readonly storageService: IStorageService
+		@IStorageService private readonly storageService: IStorageService,
+		@ICustomAuthenticationService private readonly customAuthenticationService: ICustomAuthenticationService
 	) {
 		super();
 		console.log('CustomAuthenticationProvider constructor called');
@@ -60,7 +62,12 @@ export class CustomAuthenticationProvider extends Disposable implements IAuthent
 	}
 
 	async createSession(scopes: string[]): Promise<AuthenticationSession> {
-		// Show login UI
+		// allow-any-unicode-next-line
+		// 获取验证码
+		const captchaResponse = await this.customAuthenticationService.getCaptcha();
+
+		// allow-any-unicode-next-line
+		// 显示登录UI
 		const username = await this.quickInputService.input({
 			prompt: localize('enterUsername', "Enter your username"),
 			placeHolder: localize('usernamePlaceholder', "Username")
@@ -80,11 +87,31 @@ export class CustomAuthenticationProvider extends Disposable implements IAuthent
 			throw new Error(localize('loginCancelled', "Login cancelled"));
 		}
 
-		// In a real implementation, you would authenticate with a server here
-		// For this example, we'll just create a mock session
+		// allow-any-unicode-next-line
+		// 获取验证码输入
+		const captcha = await this.quickInputService.input({
+			prompt: localize('enterCaptcha', "Enter the captcha"),
+			placeHolder: localize('captchaPlaceholder', "Captcha")
+		});
+
+		if (!captcha) {
+			throw new Error(localize('loginCancelled', "Login cancelled"));
+		}
+
+		// allow-any-unicode-next-line
+		// 使用自定义认证服务进行登录
+		const loginResult = await this.customAuthenticationService.login({
+			username,
+			password,
+			captcha,
+			captchaKey: captchaResponse.key
+		});
+
+		// allow-any-unicode-next-line
+		// 创建认证会话
 		const session: ICustomAuthSession = {
 			id: `session-${Date.now()}`,
-			accessToken: `token-${Date.now()}`,
+			accessToken: loginResult.token,
 			account: {
 				label: username,
 				id: `account-${username}`

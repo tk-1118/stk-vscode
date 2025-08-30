@@ -16,7 +16,7 @@ import { IOpenerService } from '../../../../platform/opener/common/opener.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { IHoverService } from '../../../../platform/hover/browser/hover.js';
 import { IAccessibleViewInformationService } from '../../../services/accessibility/common/accessibleViewInformationService.js';
-import { ICustomAuthenticationService } from './customAuthenticationService.js';
+import { ICustomAuthenticationService } from '../../../services/authentication/common/customAuthentication.js';
 import { IAuthenticationService, AuthenticationSession } from '../../../services/authentication/common/authentication.js';
 
 export class CustomAuthenticationView extends ViewPane {
@@ -27,6 +27,8 @@ export class CustomAuthenticationView extends ViewPane {
 	private loginButton: HTMLButtonElement | undefined;
 	private logoutButton: HTMLButtonElement | undefined;
 	private statusElement: HTMLElement | undefined;
+	private captchaImageElement: HTMLImageElement | undefined;
+	private captchaKey: string = '';
 	private customAuthenticationService: ICustomAuthenticationService;
 	private authenticationService: IAuthenticationService;
 
@@ -81,6 +83,95 @@ export class CustomAuthenticationView extends ViewPane {
 		this.statusElement.style.padding = '10px';
 		this.statusElement.style.borderRadius = '4px';
 
+		// Login form container
+		const loginFormContainer = $('.login-form-container');
+		loginFormContainer.style.marginBottom = '20px';
+
+		// Username input
+		const usernameLabel = document.createElement('label');
+		usernameLabel.textContent = 'Username:';
+		usernameLabel.style.display = 'block';
+		usernameLabel.style.marginBottom = '5px';
+
+		const usernameInput = document.createElement('input');
+		usernameInput.type = 'text';
+		usernameInput.placeholder = 'Enter username';
+		usernameInput.style.width = '100%';
+		usernameInput.style.padding = '8px';
+		usernameInput.style.marginBottom = '10px';
+		usernameInput.style.border = '1px solid #ccc';
+		usernameInput.style.borderRadius = '4px';
+
+		// Password input
+		const passwordLabel = document.createElement('label');
+		passwordLabel.textContent = 'Password:';
+		passwordLabel.style.display = 'block';
+		passwordLabel.style.marginBottom = '5px';
+
+		const passwordInput = document.createElement('input');
+		passwordInput.type = 'password';
+		passwordInput.placeholder = 'Enter password';
+		passwordInput.style.width = '100%';
+		passwordInput.style.padding = '8px';
+		passwordInput.style.marginBottom = '10px';
+		passwordInput.style.border = '1px solid #ccc';
+		passwordInput.style.borderRadius = '4px';
+
+		// Captcha container
+		const captchaContainer = $('.captcha-container');
+		captchaContainer.style.display = 'flex';
+		captchaContainer.style.alignItems = 'center';
+		captchaContainer.style.marginBottom = '10px';
+
+		// Captcha image
+		this.captchaImageElement = document.createElement('img');
+		this.captchaImageElement.style.width = '100px';
+		this.captchaImageElement.style.height = '40px';
+		this.captchaImageElement.style.marginRight = '10px';
+		this.captchaImageElement.style.border = '1px solid #ccc';
+		this.captchaImageElement.style.borderRadius = '4px';
+		this.captchaImageElement.style.cursor = 'pointer';
+
+		// Refresh captcha button
+		const refreshCaptchaButton = document.createElement('button');
+		refreshCaptchaButton.textContent = 'Refresh';
+		refreshCaptchaButton.style.padding = '5px 10px';
+		refreshCaptchaButton.style.borderRadius = '4px';
+		refreshCaptchaButton.style.border = '1px solid #ccc';
+		refreshCaptchaButton.style.backgroundColor = '#f0f0f0';
+		refreshCaptchaButton.style.cursor = 'pointer';
+
+		// Captcha input
+		const captchaLabel = document.createElement('label');
+		captchaLabel.textContent = 'Captcha:';
+		captchaLabel.style.display = 'block';
+		captchaLabel.style.marginBottom = '5px';
+
+		const captchaInput = document.createElement('input');
+		captchaInput.type = 'text';
+		captchaInput.placeholder = 'Enter captcha';
+		captchaInput.style.width = '100%';
+		captchaInput.style.padding = '8px';
+		captchaInput.style.marginBottom = '10px';
+		captchaInput.style.border = '1px solid #ccc';
+		captchaInput.style.borderRadius = '4px';
+
+		// Add event listener to refresh captcha
+		this._register(addDisposableListener(refreshCaptchaButton, EventType.CLICK, async () => {
+			await this.refreshCaptcha();
+		}));
+
+		// Add event listener to captcha image to refresh
+		if (this.captchaImageElement) {
+			this._register(addDisposableListener(this.captchaImageElement, EventType.CLICK, async () => {
+				await this.refreshCaptcha();
+			}));
+		}
+
+		// Add captcha elements to container
+		captchaContainer.appendChild(this.captchaImageElement!);
+		captchaContainer.appendChild(refreshCaptchaButton);
+
 		// Buttons container
 		const buttonsContainer = $('.custom-authentication-buttons');
 		buttonsContainer.style.marginTop = '20px';
@@ -109,7 +200,23 @@ export class CustomAuthenticationView extends ViewPane {
 		// Add event listeners
 		if (this.loginButton) {
 			this._register(addDisposableListener(this.loginButton, EventType.CLICK, async () => {
-				await this.customAuthenticationService.login();
+				// allow-any-unicode-next-line
+				// 获取验证码
+				await this.refreshCaptcha();
+
+				// allow-any-unicode-next-line
+				// 获取表单数据
+				const credentials = {
+					username: usernameInput.value,
+					password: passwordInput.value,
+					captcha: captchaInput.value,
+					captchaKey: this.captchaKey
+				};
+
+				const result: any = await this.customAuthenticationService.login(credentials);
+				if (result.error) {
+					console.error('Login failed:', result.error);
+				}
 			}));
 		}
 
@@ -118,6 +225,15 @@ export class CustomAuthenticationView extends ViewPane {
 				await this.customAuthenticationService.logout();
 			}));
 		}
+
+		// Add form elements to container
+		loginFormContainer.appendChild(usernameLabel);
+		loginFormContainer.appendChild(usernameInput);
+		loginFormContainer.appendChild(passwordLabel);
+		loginFormContainer.appendChild(passwordInput);
+		loginFormContainer.appendChild(captchaLabel);
+		loginFormContainer.appendChild(captchaInput);
+		loginFormContainer.appendChild(captchaContainer);
 
 		// Add buttons to container
 		if (this.loginButton) {
@@ -130,6 +246,7 @@ export class CustomAuthenticationView extends ViewPane {
 		// Add elements to content
 		content.appendChild(title);
 		content.appendChild(this.statusElement);
+		content.appendChild(loginFormContainer);
 		content.appendChild(buttonsContainer);
 
 		// Add content to container
@@ -138,6 +255,9 @@ export class CustomAuthenticationView extends ViewPane {
 		// Initialize view
 		console.log('CustomAuthenticationView about to call initializeView');
 		this.initializeView();
+
+		// Load initial captcha
+		this.refreshCaptcha();
 	}
 
 	private async initializeView(): Promise<void> {
@@ -176,6 +296,21 @@ export class CustomAuthenticationView extends ViewPane {
 			if (this.logoutButton) {
 				this.logoutButton.style.display = 'none';
 			}
+		}
+	}
+
+	/**
+	 * Refreshes the captcha image
+	 */
+	private async refreshCaptcha(): Promise<void> {
+		try {
+			const captchaResponse = await this.customAuthenticationService.getCaptcha();
+			this.captchaKey = captchaResponse.key;
+			if (this.captchaImageElement) {
+				this.captchaImageElement.src = `${captchaResponse.image}`;
+			}
+		} catch (e) {
+			console.error('Failed to refresh captcha:', e);
 		}
 	}
 
